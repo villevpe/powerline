@@ -49,7 +49,7 @@ export const LineChart: FC<{ priceData: PriceData }> = ({ priceData }) => {
     <div style={{ height: "100vh" }}>
       <ResponsiveLine
         data={[{ id: "prices", data }]}
-        margin={{ top: 50, right: 50, bottom: 50, left: 60 }}
+        margin={{ top: 30, right: 5, bottom: 30, left: 30 }}
         xScale={{ type: "time", format: "%Y-%m-%dT%H:%M:%S.%LZ" }}
         xFormat="time:%Y-%m-%d %H:%M"
         yScale={{
