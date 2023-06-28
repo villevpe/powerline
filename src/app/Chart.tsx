@@ -1,61 +1,38 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { FC } from "react";
+import { useRerenderOnResize } from "./useRerenderOnResize";
+import { useLayoutMode } from "./useLayoutMode";
+import { FormattedPriceData } from "./getPriceData";
 
 const ResponsiveLine = dynamic(
-  () => import("@nivo/line").then((module) => module.ResponsiveLine),
+  () => import("@nivo/line").then(({ ResponsiveLine }) => ResponsiveLine),
   { ssr: false }
 );
-import { FC } from "react";
-import type { PriceData } from "./types";
-import { Theme } from "@nivo/core";
 
-const today = new Date().getTime();
-
-const theme: Theme = {
-  crosshair: {
-    line: {
-      stroke: "#FFF",
-      strokeWidth: 1,
-    },
-  },
-  axis: {
-    ticks: {
-      text: { fill: "#FFF" },
-    },
-    domain: {
-      line: { stroke: "#555" },
-    },
-  },
-  grid: {
-    line: {
-      stroke: "#555",
-    },
-  },
-};
-
-export const LineChart: FC<{ priceData: PriceData }> = ({ priceData }) => {
-  const { prices } = priceData;
-
-  const data = prices
-    .filter(({ startDate }) => new Date(startDate).getTime() > today)
-    .map((price, index) => ({
-      x: new Date(price.startDate).toISOString(),
-      y: price.price,
-      id: `data-${index}`,
-    }));
+export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
+  useRerenderOnResize();
+  const layout = useLayoutMode();
+  const padding = layout === "desktop" ? 20 : 15;
 
   return (
-    <div style={{ height: "100vh" }}>
+    <div style={{ height: `calc(${window.innerHeight * 0.01}px * 100)` }}>
       <ResponsiveLine
         data={[{ id: "prices", data }]}
-        margin={{ top: 30, right: 5, bottom: 30, left: 30 }}
+        margin={{
+          top: 0,
+          right: padding,
+          bottom: padding * 2,
+          left: padding * 1.75,
+        }}
         xScale={{ type: "time", format: "%Y-%m-%dT%H:%M:%S.%LZ" }}
         xFormat="time:%Y-%m-%d %H:%M"
         yScale={{
           type: "linear",
-          min: "auto",
-          max: "auto",
+          min: 0,
+          // Largest value + 5% of the largest value
+          max: Math.max(...data.map(({ y }) => y)) * 1.05,
           stacked: true,
           reverse: false,
         }}
@@ -63,21 +40,52 @@ export const LineChart: FC<{ priceData: PriceData }> = ({ priceData }) => {
         axisTop={null}
         axisRight={null}
         axisBottom={{
-          format: "%H:%M",
-          tickValues: "every 2 hours",
-          legend: "time scale",
-          legendOffset: -12,
+          // If day changes, show the date, otherwise show the hour
+          format: (value) => {
+            const date = new Date(value);
+            const previousDate = new Date(value - 1000 * 60 * 60);
+            return date.getDate() !== previousDate.getDate()
+              ? date.toLocaleDateString(
+                  "fi-FI",
+                  layout === "desktop"
+                    ? {
+                        day: "numeric",
+                        month: "numeric",
+                      }
+                    : { weekday: "short" }
+                )
+              : date.getHours();
+          },
+
+          tickValues: layout === "desktop" ? "every 1 hours" : "every 3 hours",
         }}
         enableGridX={false}
         enableGridY={true}
-        lineWidth={4}
+        lineWidth={1}
         enablePoints={false}
         useMesh={true}
         enableSlices={false}
-        colors={{ scheme: "paired" }}
-        theme={theme}
-        tooltipFormat={(value) => {
-          return `${value} €/MWh`;
+        colors={{ size: 3, scheme: "yellow_orange_red" }}
+        theme={{
+          crosshair: {
+            line: {
+              stroke: "#FFF",
+              strokeWidth: 1,
+            },
+          },
+          axis: {
+            ticks: {
+              text: { fill: "#FFF" },
+            },
+            domain: {
+              line: { stroke: "#555" },
+            },
+          },
+          grid: {
+            line: {
+              stroke: "#555",
+            },
+          },
         }}
         tooltip={({ point }) => {
           return (
@@ -92,9 +100,12 @@ export const LineChart: FC<{ priceData: PriceData }> = ({ priceData }) => {
                 style={{
                   color: point.serieColor,
                   padding: "3px 0",
+                  fontSize: "0.9em",
                 }}
               >
-                {point.data.yFormatted} snt/kWh
+                {formatDateTime(new Date(point.data.x))}
+                <br />
+                {point.data.yFormatted} snt / kWh
               </div>
             </div>
           );
@@ -103,3 +114,9 @@ export const LineChart: FC<{ priceData: PriceData }> = ({ priceData }) => {
     </div>
   );
 };
+
+// Format to DD.MM klo HH:MM
+const formatDateTime = (date: Date) =>
+  `${date.getDate()}.${date.getMonth() + 1} klo ${date.getHours()}:${
+    date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
+  }`;
