@@ -16,8 +16,13 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
   const layout = useLayoutMode();
   const padding = layout === "desktop" ? 20 : 15;
 
+  const height =
+    typeof window !== "undefined"
+      ? `calc(${window.innerHeight * 0.01}px * 100)`
+      : "100vh";
+
   return (
-    <div style={{ height: `calc(${window.innerHeight * 0.01}px * 100)` }}>
+    <div style={{ height }}>
       <ResponsiveLine
         data={[{ id: "prices", data }]}
         margin={{
