@@ -6,20 +6,30 @@ import { useRerenderOnResize } from "./useRerenderOnResize";
 import { useLayoutMode } from "./useLayoutMode";
 import { FormattedPriceData } from "./getPriceData";
 
+const CHART_PADDING_Y = 2;
+const HIGH_PRICE_LIMIT = 20;
+
 const ResponsiveLine = dynamic(
   () => import("@nivo/line").then(({ ResponsiveLine }) => ResponsiveLine),
   { ssr: false }
 );
 
-export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
+export const LineChart: FC<{ data: FormattedPriceData }> = ({
+  data: allData,
+}) => {
   useRerenderOnResize();
   const layout = useLayoutMode();
-  const padding = layout === "desktop" ? 20 : 15;
+
+  const data = filterData(allData);
 
   const height =
     typeof window !== "undefined"
       ? `calc(${window.innerHeight * 0.01}px * 100)`
       : "100vh";
+
+  const smallestPrice = Math.min(...data.map(({ y }) => y));
+  const largestPrice = Math.max(...data.map(({ y }) => y));
+  const currentPrice = data[data.length - 1].y;
 
   return (
     <div style={{ height }}>
@@ -27,21 +37,21 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
         data={[{ id: "prices", data }]}
         margin={{
           top: 0,
-          right: padding,
-          bottom: padding * 2,
-          left: padding * 1.75,
+          bottom: 30,
+          right: 50,
+          left: 50,
         }}
         xScale={{ type: "time", format: "%Y-%m-%dT%H:%M:%S.%LZ" }}
         xFormat="time:%Y-%m-%d %H:%M"
         yScale={{
           type: "linear",
-          min: 0,
-          // Largest value + 5% of the largest value
-          max: Math.max(...data.map(({ y }) => y)) * 1.05,
-          stacked: true,
+          min: smallestPrice - CHART_PADDING_Y,
+          max: largestPrice + CHART_PADDING_Y,
+          stacked: false,
           reverse: false,
         }}
         enableArea={true}
+        areaBaselineValue={0}
         axisTop={null}
         axisRight={null}
         axisBottom={{
@@ -61,21 +71,23 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
                 )
               : date.getHours();
           },
-
           tickValues: layout === "desktop" ? "every 1 hours" : "every 3 hours",
         }}
         enableGridX={false}
         enableGridY={true}
-        lineWidth={1}
+        lineWidth={3}
         enablePoints={false}
         useMesh={true}
         enableSlices={false}
-        colors={{ size: 3, scheme: "yellow_orange_red" }}
+        curve="monotoneX"
+        colors={[percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100)]}
         theme={{
           crosshair: {
             line: {
               stroke: "#FFF",
-              strokeWidth: 1,
+              strokeWidth: 2,
+              strokeDasharray: "10 10",
+              strokeOpacity: 0.5,
             },
           },
           axis: {
@@ -97,21 +109,18 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
             <div
               style={{
                 background: "#000",
-                padding: "9px 12px",
-                border: "1px solid #ccc",
+                color: point.serieColor,
+                padding: "8px 16px",
+                fontSize: "1rem",
+                borderRadius: "9999px",
+                border: `1px solid ${point.serieColor}`,
               }}
             >
-              <div
-                style={{
-                  color: point.serieColor,
-                  padding: "3px 0",
-                  fontSize: "0.9em",
-                }}
-              >
-                {formatDateTime(new Date(point.data.x))}
-                <br />
-                {point.data.yFormatted} snt / kWh
-              </div>
+              ⚡ {formatDateTime(new Date(point.data.x))}
+              <br />
+              <strong>
+                {((point.data.yFormatted as number) / 100).toFixed(3)} €
+              </strong>
             </div>
           );
         }}
@@ -120,8 +129,29 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({ data }) => {
   );
 };
 
-// Format to DD.MM klo HH:MM
+// Format to HH:MM
 const formatDateTime = (date: Date) =>
-  `${date.getDate()}.${date.getMonth() + 1} klo ${date.getHours()}:${
+  `${date.getHours()}:${
     date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()
   }`;
+
+const filterData = (data: FormattedPriceData) => {
+  // Current time minus 2 hours
+  const start = new Date().getTime() - 1000 * 60 * 60 * 2;
+  return data.filter(({ x }) => new Date(x).getTime() >= start);
+};
+
+function percentToColor(perc: number) {
+  let r,
+    g,
+    b = 0;
+  if (perc < 50) {
+    r = 255;
+    g = Math.round(5.1 * perc);
+  } else {
+    g = 255;
+    r = Math.round(510 - 5.1 * perc);
+  }
+  var h = r * 0x10000 + g * 0x100 + b * 0x1;
+  return "#" + ("000000" + h.toString(16)).slice(-6);
+}
