@@ -1,0 +1,12 @@
+{
+    "cleanUrls": true,
+    "public": true,
+    "regions": ["arn1"],
+    "trailingSlash": false,
+    "crons": [
+      {
+        "path": "/api/revalidate?key=c8f7789c-ef59-4a43-a53f-1c34aeea9e37",
+        "schedule": "1 12 * * *"
+      }
+    ]
+  }
