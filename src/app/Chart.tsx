@@ -22,6 +22,10 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
 
   const data = filterData(allData);
 
+  if (data.length === 0) {
+    return <span>No data :(</span>;
+  }
+
   const height =
     typeof window !== "undefined"
       ? `calc(${window.innerHeight * 0.01}px * 100)`
