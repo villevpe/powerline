@@ -33,7 +33,7 @@ export function GET({ url }: NextRequest) {
      */
     return new NextResponse("Not Found", { status: 404 });
   }
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 
   return new NextResponse(
     JSON.stringify({ revalidated: true, now: Date.now() }),
