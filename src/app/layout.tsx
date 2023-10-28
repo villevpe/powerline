@@ -13,6 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <html lang="en">
         <head>
           <meta name="theme-color" content="#000000" />
+          <meta name="viewport" content="width=device-width, minimal-ui" />
         </head>
         <body>{children}</body>
       </html>

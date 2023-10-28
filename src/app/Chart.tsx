@@ -2,7 +2,7 @@
 import "client-only";
 
 import dynamic from "next/dynamic";
-import { FC } from "react";
+import { FC, use, useEffect, useState } from "react";
 import { useRerenderOnResize } from "./useRerenderOnResize";
 import { useLayoutMode } from "./useLayoutMode";
 import { FormattedPriceData } from "./getPriceData";
@@ -20,17 +20,16 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
 }) => {
   useRerenderOnResize();
   const layout = useLayoutMode();
-
   const data = filterData(allData);
+  const [height, setHeight] = useState("100vh");
+
+  useEffect(() => {
+    setHeight(`calc(${window.innerHeight * 0.01}px * 100)`);
+  }, []);
 
   if (data.length === 0) {
     return <span>No data :(</span>;
   }
-
-  const height =
-    typeof window !== "undefined"
-      ? `calc(${window.innerHeight * 0.01}px * 100)`
-      : "100vh";
 
   const smallestPrice = Math.min(...data.map(({ y }) => y));
   const largestPrice = Math.max(...data.map(({ y }) => y));
@@ -87,9 +86,12 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
         curve="monotoneX"
         colors={[percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100)]}
         theme={{
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          fontSize: 12,
           crosshair: {
             line: {
-              stroke: "#FFF",
+              stroke: "rgba(255, 255, 255, 0.75)",
               strokeWidth: 2,
               strokeDasharray: "10 10",
               strokeOpacity: 0.5,
@@ -97,7 +99,11 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
           },
           axis: {
             ticks: {
-              text: { fill: "#FFF" },
+              text: {
+                fill: "rgba(255, 255, 255, 0.5)",
+                fontWeight: 600,
+                fontSize: 10,
+              },
             },
             domain: {
               line: { stroke: "#555" },
@@ -105,12 +111,11 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
           },
           grid: {
             line: {
-              stroke: "#555",
+              stroke: "rgba(255, 255, 255, 0.15)",
             },
           },
         }}
         tooltip={({ point }) => {
-          const isLastPointTooltip = point.index === 0;
           let move;
           if ([0, 1, 2, 3].includes(point.index)) {
             move = -50 + point.index * 5;
@@ -120,19 +125,18 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
             <div
               style={{
                 transform: move ? `translateX(${move}%)` : undefined,
-                background: "#000",
+                transition: "transform 0.2s",
+                background: "rgba(0, 0, 0, 0.6)",
                 color: point.serieColor,
-                padding: "8px 16px",
-                fontSize: "1rem",
+                padding: "16px 16px",
+                fontSize: "0.9rem",
                 borderRadius: "9999px",
-                border: `1px solid ${point.serieColor}`,
+                border: `2px solid ${point.serieColor}`,
               }}
             >
-              ⚡ {formatDateTime(new Date(point.data.x))}
+              {formatDateTime(new Date(point.data.x))}
               <br />
-              <strong>
-                {((point.data.yFormatted as number) / 100).toFixed(3)} €
-              </strong>
+              <strong>{Number(point.data.yFormatted).toFixed(2)} c</strong>
             </div>
           );
         }}
