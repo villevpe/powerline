@@ -1,3 +1,6 @@
+import { cache } from "react";
+import "server-only";
+
 type PriceData = {
   prices: {
     price: number;
@@ -20,12 +23,19 @@ const formatData = ({ prices }: PriceData) => {
   }));
 };
 
-export const getPriceData = async (): Promise<FormattedPriceData> => {
+export const preload = () => {
+  void getPriceData();
+};
+
+export const getPriceData = cache(async (): Promise<FormattedPriceData> => {
   const data = (await (
     await fetch("https://api.porssisahko.net/v1/latest-prices.json", {
-      cache: "force-cache",
+      // 1 hour for now
+      next: { revalidate: 3600 },
     })
   ).json()) as PriceData;
 
+  console.log(data);
+
   return formatData(data);
-};
+});
