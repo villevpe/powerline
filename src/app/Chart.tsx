@@ -36,10 +36,10 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
       <ResponsiveLine
         data={[{ id: "prices", data }]}
         margin={{
-          top: 0,
+          top: 10,
           bottom: 30,
-          right: 50,
-          left: 50,
+          right: 0,
+          left: 30,
         }}
         xScale={{ type: "time", format: "%Y-%m-%dT%H:%M:%S.%LZ" }}
         xFormat="time:%Y-%m-%d %H:%M"
@@ -105,9 +105,16 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
           },
         }}
         tooltip={({ point }) => {
+          const isLastPointTooltip = point.index === 0;
+          let move;
+          if ([0, 1, 2, 3].includes(point.index)) {
+            move = -50 + point.index * 5;
+          }
+
           return (
             <div
               style={{
+                transform: move ? `translateX(${move}%)` : undefined,
                 background: "#000",
                 color: point.serieColor,
                 padding: "8px 16px",
