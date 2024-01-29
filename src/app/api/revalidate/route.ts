@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -17,13 +17,18 @@ import { NextRequest, NextResponse } from "next/server";
 const KEY = "c8f7789c-ef59-4a43-a53f-1c34aeea9e37";
 
 /**
+ * Place one call to the deployed environment to trigger the re-rendering
+ */
+const DEPLOYMENT_URL = "https://powerline-two.vercel.app";
+
+/**
  * API route to trigger manual invalidation of the whole site ISR cache. It gets called
  * via a CRON job periodically to keep the site content fresh.
  *
  * This is a workaround to combat 2MB fetch limit for fetching the open positions data.
  * More information in `src/views/Positions/getPositions.ts`.
  */
-export function GET({ url }: NextRequest) {
+export async function GET({ url }: NextRequest) {
   if (new URL(url).searchParams.get("key") !== KEY) {
     /**
      * An origin server that wishes to "hide" the current existence of a forbidden target resource MAY
@@ -33,7 +38,10 @@ export function GET({ url }: NextRequest) {
      */
     return new NextResponse("Not Found", { status: 404 });
   }
-  revalidatePath("/", "layout");
+
+  revalidateTag("prices");
+
+  await triggerRerender();
 
   return new NextResponse(
     JSON.stringify({ revalidated: true, now: Date.now() }),
@@ -45,3 +53,11 @@ export function GET({ url }: NextRequest) {
     }
   );
 }
+
+const triggerRerender = () =>
+  new Promise<void>((resolve) => {
+    setTimeout(async () => {
+      await fetch(DEPLOYMENT_URL);
+      resolve();
+    }, 1000);
+  });

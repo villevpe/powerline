@@ -30,8 +30,7 @@ export const preload = () => {
 export const getPriceData = cache(async (): Promise<FormattedPriceData> => {
   const data = (await (
     await fetch("https://api.porssisahko.net/v1/latest-prices.json", {
-      // 1 hour for now
-      next: { revalidate: 3600 },
+      next: { revalidate: false, tags: ["prices"] },
     })
   ).json()) as PriceData;
 

@@ -2,12 +2,12 @@
 import "client-only";
 
 import dynamic from "next/dynamic";
-import { FC, use, useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { useRerenderOnResize } from "./useRerenderOnResize";
 import { useLayoutMode } from "./useLayoutMode";
 import { FormattedPriceData } from "./getPriceData";
 
-const CHART_PADDING_Y = 2;
+const CHART_PADDING_Y_FRACTION = 0.1;
 const HIGH_PRICE_LIMIT = 20;
 
 const ResponsiveLine = dynamic(
@@ -35,6 +35,10 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
   const largestPrice = Math.max(...data.map(({ y }) => y));
   const currentPrice = data[data.length - 1].y;
 
+  const min = smallestPrice;
+  const max =
+    largestPrice + Math.min(largestPrice * CHART_PADDING_Y_FRACTION, 2);
+
   return (
     <div style={{ height }}>
       <ResponsiveLine
@@ -49,13 +53,13 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
         xFormat="time:%Y-%m-%d %H:%M"
         yScale={{
           type: "linear",
-          min: smallestPrice - CHART_PADDING_Y,
-          max: largestPrice + CHART_PADDING_Y,
+          min,
+          max,
           stacked: false,
           reverse: false,
         }}
         enableArea={true}
-        areaBaselineValue={0}
+        areaBaselineValue={min}
         axisTop={null}
         axisRight={null}
         axisBottom={{
