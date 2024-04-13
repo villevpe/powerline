@@ -88,7 +88,11 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
         useMesh={true}
         enableSlices={false}
         curve="monotoneX"
-        colors={[percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100)]}
+        colors={[
+          currentPrice < 1
+            ? "#7CFC00"
+            : percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100),
+        ]}
         theme={{
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
