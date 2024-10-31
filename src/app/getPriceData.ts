@@ -34,7 +34,5 @@ export const getPriceData = cache(async (): Promise<FormattedPriceData> => {
     })
   ).json()) as PriceData;
 
-  console.log(data);
-
   return formatData(data);
 });

@@ -15,9 +15,10 @@ const ResponsiveLine = dynamic(
   { ssr: false }
 );
 
-export const LineChart: FC<{ data: FormattedPriceData }> = ({
-  data: allData,
-}) => {
+export const LineChart: FC<{
+  data: FormattedPriceData;
+  colorScheme?: string;
+}> = ({ data: allData, colorScheme = 'default' }) => {
   useRerenderOnResize();
   const layout = useLayoutMode();
   const data = filterData(allData);
@@ -34,6 +35,15 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
   const smallestPrice = Math.min(...data.map(({ y }) => y));
   const largestPrice = Math.max(...data.map(({ y }) => y));
   const currentPrice = data[data.length - 1].y;
+
+  const colors =
+    colorScheme === "dynamic"
+      ? [
+          currentPrice < 1
+            ? "#7CFC00"
+            : percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100),
+        ]
+      : ["#CCC"];
 
   const min = smallestPrice;
   const max =
@@ -88,11 +98,7 @@ export const LineChart: FC<{ data: FormattedPriceData }> = ({
         useMesh={true}
         enableSlices={false}
         curve="monotoneX"
-        colors={[
-          currentPrice < 1
-            ? "#7CFC00"
-            : percentToColor(100 - (currentPrice / HIGH_PRICE_LIMIT) * 100),
-        ]}
+        colors={colors}
         theme={{
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
